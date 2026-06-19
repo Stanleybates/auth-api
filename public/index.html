@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Auth API Tester</title>
+
+  <!-- Google Font: Inter for clean readable UI, JetBrains Mono for token/response display -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* ── Reset & Base ─────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;   /* deep navy-black background */
+      --surface:   #1a1d27;   /* card surface */
+      --border:    #2a2d3e;   /* subtle borders */
+      --accent:    #6c63ff;   /* electric indigo — our signature color */
+      --accent-dim:#3d3878;   /* dimmed accent for hover states */
+      --success:   #22c55e;
+      --error:     #ef4444;
+      --text:      #e2e4f0;   /* primary text */
+      --muted:     #6b7280;   /* secondary/label text */
+      --mono:      'JetBrains Mono', monospace;
+      --sans:      'Inter', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    /* ── Header ───────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    header .badge {
+      display: inline-block;
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 99px;
+      margin-bottom: 12px;
+      font-family: var(--mono);
+    }
+    header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+    header p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* ── Base URL bar ─────────────────────────── */
+    .url-bar {
+      width: 100%;
+      max-width: 700px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .url-bar label {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      font-family: var(--mono);
+    }
+    .url-bar input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+
+    /* ── Tab switcher ─────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .tab-btn {
+      padding: 8px 24px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .tab-btn:hover:not(.active) {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    /* ── Card ─────────────────────────────────── */
+    .card {
+      width: 100%;
+      max-width: 700px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+    }
+
+    /* ── Form fields ──────────────────────────── */
+    .field {
+      margin-bottom: 18px;
+    }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-family: var(--sans);
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus {
+      border-color: var(--accent);
+    }
+
+    /* ── Submit button ────────────────────────── */
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-submit:hover  { background: #5a52e0; }
+    .btn-submit:active { transform: scale(0.98); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Response panel ───────────────────────── */
+    .response-panel {
+      margin-top: 24px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .response-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .response-header span {
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--muted);
+    }
+    .status-badge {
+      font-size: 12px;
+      font-family: var(--mono);
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 99px;
+    }
+    .status-badge.ok  { background: #14532d; color: var(--success); }
+    .status-badge.err { background: #7f1d1d; color: var(--error); }
+    .status-badge.idle { background: var(--border); color: var(--muted); }
+
+    pre {
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: var(--text);
+      min-height: 80px;
+    }
+
+    /* ── Token display ────────────────────────── */
+    .token-box {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: #0a1628;
+      border: 1px solid #1e3a5f;
+      border-radius: 10px;
+      display: none; /* shown via JS when token exists */
+    }
+    .token-box label {
+      font-size: 11px;
+      color: #3b82f6;
+      font-family: var(--mono);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .token-box p {
+      margin-top: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: #93c5fd;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    /* hide panels by default */
+    .panel { display: none; }
+    .panel.active { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ───────────────────────────────── -->
+  <header>
+    <div class="badge">Node.js + Neon DB</div>
+    <h1>Auth API Tester</h1>
+    <p>Test your Signup and Login endpoints live</p>
+  </header>
+
+  <!-- ── Base URL input ───────────────────────── -->
+  <!--
+    This lets you change the API base URL without editing code.
+    Defaults to localhost:3000 where your Node server runs.
+  -->
+  <div class="url-bar">
+    <label>BASE URL</label>
+    <input type="text" id="baseUrl" value="http://localhost:3000" />
+  </div>
+
+  <!-- ── Tab switcher ─────────────────────────── -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('signup')">Sign Up</button>
+    <button class="tab-btn"        onclick="switchTab('login')">Login</button>
+  </div>
+
+  <!-- ── Card ─────────────────────────────────── -->
+  <div class="card">
+
+    <!-- SIGNUP PANEL -->
+    <div class="panel active" id="panel-signup">
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="signup-name" placeholder="Stanley" />
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="stanley@email.com" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="signup-password" placeholder="Min. 6 characters" />
+      </div>
+      <button class="btn-submit" onclick="handleSignup()">Create Account →</button>
+    </div>
+
+    <!-- LOGIN PANEL -->
+    <div class="panel" id="panel-login">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="stanley@email.com" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Your password" />
+      </div>
+      <button class="btn-submit" onclick="handleLogin()">Login →</button>
+    </div>
+
+    <!-- RESPONSE PANEL (shared by both) -->
+    <div class="response-panel">
+      <div class="response-header">
+        <span id="endpoint-label">Waiting for request...</span>
+        <span class="status-badge idle" id="status-badge">—</span>
+      </div>
+      <!-- The server's JSON response is displayed here -->
+      <pre id="response-output">Send a request to see the response.</pre>
+    </div>
+
+    <!-- JWT Token display (only shown when a token is returned) -->
+    <div class="token-box" id="token-box">
+      <label>JWT Token Received</label>
+      <p id="token-display"></p>
+    </div>
+  </div>
+
+  <script>
+    // ── Tab switching ────────────────────────────
+    // Toggles which panel (signup or login) is visible
+    // and marks the clicked tab button as active
+    function switchTab(tab) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+      document.getElementById('panel-' + tab).classList.add('active');
+      event.target.classList.add('active');
+
+      // Clear the response panel when switching tabs
+      resetResponse();
+    }
+
+    // ── Reset response panel ─────────────────────
+    function resetResponse() {
+      document.getElementById('response-output').textContent = 'Send a request to see the response.';
+      document.getElementById('status-badge').className = 'status-badge idle';
+      document.getElementById('status-badge').textContent = '—';
+      document.getElementById('endpoint-label').textContent = 'Waiting for request...';
+      document.getElementById('token-box').style.display = 'none';
+    }
+
+    // ── Display the API response ─────────────────
+    // status: HTTP status code (e.g. 201, 401)
+    // data:   parsed JSON from the server
+    // endpoint: which route was called (for the label)
+    function showResponse(status, data, endpoint) {
+      const badge = document.getElementById('status-badge');
+      const output = document.getElementById('response-output');
+      const label = document.getElementById('endpoint-label');
+      const tokenBox = document.getElementById('token-box');
+      const tokenDisplay = document.getElementById('token-display');
+
+      // Show which endpoint was hit
+      label.textContent = 'POST ' + endpoint;
+
+      // Color the badge green for 2xx, red for errors
+      const isOk = status >= 200 && status < 300;
+      badge.className = 'status-badge ' + (isOk ? 'ok' : 'err');
+      badge.textContent = status;
+
+      // Pretty-print the full JSON response (2 spaces indent)
+      output.textContent = JSON.stringify(data, null, 2);
+
+      // If a JWT token came back, display it separately
+      // so students can clearly see what it looks like
+      if (data.token) {
+        tokenBox.style.display = 'block';
+        tokenDisplay.textContent = data.token;
+      } else {
+        tokenBox.style.display = 'none';
+      }
+    }
+
+    // ── Generic fetch helper ─────────────────────
+    // Makes a POST request to baseUrl + path with the given body object.
+    // Returns { status, data } so callers don't repeat this logic.
+    async function postRequest(path, body) {
+      const base = document.getElementById('baseUrl').value.replace(/\/$/, '');
+      const url = base + path;
+
+      // fetch() sends HTTP requests from the browser
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          // Tell the server we're sending JSON
+          'Content-Type': 'application/json'
+        },
+        // JSON.stringify converts our JS object into a JSON string for the request body
+        body: JSON.stringify(body)
+      });
+
+      // res.json() parses the server's JSON response back into a JS object
+      const data = await res.json();
+      return { status: res.status, data };
+    }
+
+    // ── Handle Signup ────────────────────────────
+    async function handleSignup() {
+      const name     = document.getElementById('signup-name').value.trim();
+      const email    = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+
+      // Simple client-side validation before hitting the server
+      if (!name || !email || !password) {
+        alert('Please fill in all fields.');
+        return;
+      }
+
+      try {
+        const { status, data } = await postRequest('/auth/signup', { name, email, password });
+        showResponse(status, data, '/auth/signup');
+      } catch (err) {
+        // This catches network errors (e.g. server not running)
+        showResponse(0, { error: 'Could not reach server. Is it running?' }, '/auth/signup');
+      }
+    }
+
+    // ── Handle Login ─────────────────────────────
+    async function handleLogin() {
+      const email    = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!email || !password) {
+        alert('Please fill in all fields.');
+        return;
+      }
+
+      try {
+        const { status, data } = await postRequest('/auth/login', { email, password });
+        showResponse(status, data, '/auth/login');
+      } catch (err) {
+        showResponse(0, { error: 'Could not reach server. Is it running?' }, '/auth/login');
+      }
+    }
+  </script>
+</body>
+</html>
