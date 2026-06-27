@@ -1,22 +1,22 @@
+// index.js is now clean — it just starts the server
+// All wiring is handled by the factory
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-const app = express();
+const createApp = require('./factory/appFactory');
+const { app, authController } = createApp(express);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Serve index.html from the public/ folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Routes
-const authRoutes = require('./auth');
-app.use('/auth', authRoutes);
+// Routes — controller already has its dependencies injected by the factory
+app.post('/auth/signup', authController.signup.bind(authController));
+app.post('/auth/login', authController.login.bind(authController));
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({ message: 'Auth API is running!' });
 });
